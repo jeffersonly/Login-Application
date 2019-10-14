@@ -1,0 +1,31 @@
+<!-- Check to see if there are errors, if there are, display error messages for register page -->
+<% if(typeof errors != 'undefined') { %>
+    <% errors.forEach(function(error) { %>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <%= error.msg %>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    <% }); %>
+<% } %>
+
+<!-- Check if success message is empty -->
+<% if(success_msg != '') { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= success_msg %>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+<% } %>
+
+<!-- Check if error message is empty -->
+<% if(error_msg != '') { %>
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <%= error_msg %>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+<% } %>
