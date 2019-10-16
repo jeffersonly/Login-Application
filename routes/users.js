@@ -2,6 +2,12 @@ const express = require('express'); //bring in express
 const router = express.Router(); //create express router
 const bcrypt = require('bcryptjs') //bring in bcrypt
 const passport = require('passport');
+const nodemailer = require('nodemailer'); //used for reset password email sending
+const async = require('async'); //used to avoid nested callbacks
+const crypto = require('crypto'); //used to generate random token during password reset
+
+//Google Email/Pass
+const googlePass = require('../config/keys').googlePassword;
 
 //User model
 const User = require('../models/User');
@@ -11,6 +17,12 @@ router.get('/login', (req, res) => res.render('Login'));
 
 //Register Page
 router.get('/register', (req, res) => res.render('Register'));
+
+//Forgot Password Page
+router.get('/forgot', (req, res) => res.render('Forgot'));
+
+//Reset Password Route
+router.get('/reset', (req, res) => res.render('Reset'));
 
 //Register handler
 router.post('/register', (req, res) => {
@@ -98,6 +110,67 @@ router.get('/logout', (req, res) => {
     req.logout();
     req.flash('success_msg', "You have successfully logged out.");
     res.redirect('/users/login');
+});
+
+//Forgot Password Handler
+router.post('/forgot', (req, res, next) => {
+    async.waterfall([
+        function(done) {
+            crypto.randomBytes(20, function(err, buf) {
+                const token = buf.toString('hex');
+                done(err, token);
+            });
+        },
+        function(token, done) {
+            User.findOne({ email: req.body.email }, function(err, user) {
+                if(!user) {
+                    req.flash('error_msg', 'No account with that email address exists.');
+                    return res.redirect('/users/forgot');
+                }
+                //update the users password to be the token
+                user.password = token;
+
+                user.save(function(err) {
+                    done(err, token, user);
+                });
+            });
+        },
+        function(token, user, done) {
+            let transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: 'lyjefferson98@gmail.com',
+                    pass: googlePass,
+                }
+            });
+            let mailMessage = { 
+                from: 'cmpe172proj@gmail.com',
+                to: user.email,
+                subject: 'Application Password Reset',
+                text: 'You are receiving this because you have requested the reset of the password for your account.\n\n' +
+                'Your new password is:' + token + '\n\n' + 'Please use this new password to reset your email' + '\n\n' +
+                'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
+                'http://' + req.headers.host + '/users/reset/' 
+            };
+            transporter.sendMail(mailMessage, function(err, data) {
+                if(err) {
+                    console.log("error sending email");
+                } else {
+                    req.flash('success_msg', 'An email has been sent to ' + user.email + ' with further instructions.');
+                    done(err, 'done');
+                }
+            });
+        }
+    ], function(err) {
+        if(err) return next(err);
+        res.redirect('/users/forgot');
+    });
+
+});
+
+//Reset Password Handler
+router.post('/reset', (req, res) => {
+    
 });
 
 module.exports = router;

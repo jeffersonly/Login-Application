@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    resetPasswordToken: String,
 });
 
 const User = mongoose.model('User', userSchema); //create model for our schema

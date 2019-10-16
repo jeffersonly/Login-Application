@@ -1,0 +1,25 @@
+<div class="row mt-5">
+    <div class="col-md-6 m-auto">
+        <div class="card card-body">
+        <h1 class="text-center mb-3">Forgot Password<br/><i class="fas fa-question"></i><i class="fas fa-question"></i><i class="fas fa-question"></i></h1>
+        <!-- Add partial (error messages) -->
+        <% include ./partials/messages %>
+        <form action="/users/forgot" method="POST">
+            <div class="form-group">
+            <label for="email">Enter Email</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-control"
+                placeholder="Enter Email"
+            />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Submit</button>
+        </form>
+        <p class="lead mt-4">
+            Remember? <a href="/users/login">Sign in here</a>
+        </p>
+        </div>
+    </div>
+</div>

@@ -1,9 +1,9 @@
 const express = require('express'); //bring in express to app js file
 const expressLayouts = require('express-ejs-layouts'); //bring in express layouts
 const mongoose = require('mongoose'); //bring in mongoose
-const flash = require('connect-flash');
-const session = require('express-session');
-const passport = require('passport');
+const flash = require('connect-flash'); //will be used for flash messaging
+const session = require('express-session'); //keeps a session of the express serv
+const passport = require('passport'); //used for authentication
 
 const app = express(); //initialize app variable with express
 
