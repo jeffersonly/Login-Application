@@ -5,6 +5,7 @@ const passport = require('passport');
 const nodemailer = require('nodemailer'); //used for reset password email sending
 const async = require('async'); //used to avoid nested callbacks
 const crypto = require('crypto'); //used to generate random token during password reset
+const { ensureAuthenticated } = require('../config/auth'); //make sure users are logged in to view page 
 
 //Google Email/Pass
 const googlePass = require('../config/keys').googlePassword;
@@ -22,7 +23,7 @@ router.get('/register', (req, res) => res.render('Register'));
 router.get('/forgot', (req, res) => res.render('Forgot'));
 
 //Reset Password Route
-router.get('/reset', (req, res) => res.render('Reset'));
+router.get('/reset', ensureAuthenticated, (req, res) => res.render('Reset'));
 
 //Register handler
 router.post('/register', (req, res) => {
@@ -181,11 +182,90 @@ router.post('/forgot', (req, res, next) => {
         res.redirect('/users/forgot');
     });
 
-});
+    });
 
-//Reset Password Handler
-router.post('/reset', (req, res) => {
-    
+    //Reset Password Handler
+    router.post('/reset', ensureAuthenticated, (req, res) => {
+    //console.log(req.user.name + "\n" + req.user.email);
+    const { password1, password2 } = req.body; //pull stuff out of req.body
+
+    //Validation
+    let errors = []; //initialize array of errors
+
+    //check required fields to see if they're empty
+    if(!password1 || !password2) {
+        errors.push({ msg: 'Please fill out all fields on the form.'})
+    }
+
+    //check if passwords match
+    if(password1 !== password2) {
+        errors.push({ msg: 'Passwords do not match.' });
+    }
+
+    //check the password length
+    if(password1.length < 6) {
+        errors.push({ msg: 'Password should be at least 6 characters'});
+    }
+
+    //check to see if there are errors
+    if(errors.length > 0) {
+        //redo change pass form, pass in data that's been filled in
+        res.render('reset', {
+            errors,
+            password1,
+            password2
+        });
+    } else {
+        //Validation passed
+        User.findOne({ email: req.user.email }) //find the users email within db
+        .then(user => {
+            if(user) { //check to see if session active, found user
+                user.password = password1; //update user password to new password
+                //Hash Password so it's not plain text -- use bcrypt
+                bcrypt.genSalt(10, (err, salt) => 
+                bcrypt.hash(user.password, salt, (err, hash) => {
+                    if(err) throw err;
+                    //Set password to hashed password
+                    user.password = hash;
+                    //save user
+                    user.save()
+                        .then(user => {
+                            req.flash('success_msg', 'Password changed');
+                            res.redirect('/users/dashboard')
+                        })
+                        .catch(err => console.log(err));
+                }))
+            } else { //if no user found, passport session is prob expired
+                console.log("Session has expired... try logging in again.")
+            }
+
+            //Send email notification to user that password changed
+            let transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: 'lyjefferson98@gmail.com',
+                    pass: googlePass,
+                }
+            });
+            let mailMessage = { 
+                from: 'cmpe172proj@gmail.com',
+                to: user.email,
+                subject: 'Password has been changed!',
+                text: 'You are receiving this because you have changed the password for your account.\n\n' +
+                'Your new password is:' + password1 + '\n\n' + 'Please use this new password to log in.' + '\n\n' +
+                'Please click on the following link, or paste this into your browser to log in:\n\n' +
+                'http://' + req.headers.host + '/users/login' 
+            };
+            transporter.sendMail(mailMessage, function(err, data) {
+                if(err) {
+                    console.log("error sending email");
+                } else {
+                    req.flash('success_msg', 'An email has been sent to ' + user.email + ' with a password update message.');
+                    done(err, 'done');
+                }
+            });
+        });
+    }
 });
 
 module.exports = router;
