@@ -116,7 +116,7 @@ router.get('/logout', (req, res) => {
 router.post('/forgot', (req, res, next) => {
     async.waterfall([
         function(done) {
-            crypto.randomBytes(20, function(err, buf) {
+            crypto.randomBytes(5, function(err, buf) {
                 const token = buf.toString('hex');
                 done(err, token);
             });
@@ -127,8 +127,23 @@ router.post('/forgot', (req, res, next) => {
                     req.flash('error_msg', 'No account with that email address exists.');
                     return res.redirect('/users/forgot');
                 }
+
                 //update the users password to be the token
                 user.password = token;
+
+                //Hash Password so it's not plain text -- use bcrypt
+                bcrypt.genSalt(10, (err, salt) => 
+                bcrypt.hash(user.password, salt, (err, hash) => {
+                    if(err) throw err;
+                    //Set password to hashed password
+                    user.password = hash;
+                    //save user
+                    user.save()
+                        .then(user => {
+                            req.flash('success_msg', 'Password changed');
+                        })
+                        .catch(err => console.log(err));
+                }))
 
                 user.save(function(err) {
                     done(err, token, user);
