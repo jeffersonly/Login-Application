@@ -5,9 +5,10 @@ const flash = require('connect-flash'); //will be used for flash messaging
 const session = require('express-session'); //keeps a session of the express serv
 const passport = require('passport'); //used for authentication
 const cookieSession = require('cookie-session'); //used for oauth authentication cookie storing
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const keys = require('./config/keys');
-
-const app = express(); //initialize app variable with express
+const MongoStore = require('connect-mongo')(session);
 
 //DB config
 const db = require('./config/keys').MongoURI;
@@ -15,16 +16,12 @@ const db = require('./config/keys').MongoURI;
 //connect to mongodb
 mongoose.connect(db, { useNewUrlParser: true })
     .then(() => console.log('MongoDB Connected Successfully...'))
-    .catch(err => console.log(err))
+    .catch(err => console.log(err));
+
+const app = express(); //initialize app variable with express
 
 //Passport config
 require('./config/passport')(passport);
-
-//use cookie session - encrypts cookie
-app.use(cookieSession({
-    maxAge: 24 * 60 * 60 * 1000,
-    keys: [keys.session.cookieKey]
-}));
 
 //EJS
 app.use(expressLayouts);
@@ -33,11 +30,18 @@ app.set('view engine', 'ejs');
 //Bodyparser
 app.use(express.urlencoded({ extender: false })); //can get data from our form with request.body
 
+//cookie parser
+app.use(cookieParser(keys.session.cookieKey));
+
 //Express session
 app.use(session({
-    secret: 'secret',
-    resave: true,
+    secret: keys.session.cookieKey,
+    resave: false,
     saveUninitialized: true,
+    cookie: { secure: false, maxAge: (4 * 60 * 60 * 1000 * 10000 )},
+    store: new MongoStore({
+        mongooseConnection: mongoose.connection
+    }),
 }));
 
 //passport middleware

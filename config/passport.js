@@ -10,16 +10,6 @@ const User = require('../models/User');
 const oAuthUser = require('../models/oAuthUser');
 
 module.exports = function(passport) {
-    passport.serializeUser((user, done) => {
-        done(null, user.id);
-    });
-
-    passport.deserializeUser((id, done) => {
-        User.findById (id, (err, user) => {
-            done(err, user);
-        });
-    });
-
     //uses local strategy
     passport.use(
         new LocalStrategy({ usernameField: 'email'}, (email, password, done) => {
@@ -95,4 +85,17 @@ module.exports = function(passport) {
             }
         })
     }));
+
+    passport.serializeUser((user, done) => {
+        console.log("Serialize user called: " + user.id);
+        done(null, user.id);
+    });
+
+    passport.deserializeUser((id, done) => {
+        User.findById (id, (err, user) => {
+            console.log("Deserialize user called: " + user);
+            //console.log(id);
+            done(err, user);
+        });
+    });
 }

@@ -1,4 +1,5 @@
 const express = require('express'); //bring in express
+//const expressSess = require('express-session');
 const router = express.Router(); //create express router
 const bcrypt = require('bcryptjs') //bring in bcrypt
 const passport = require('passport');
@@ -6,12 +7,23 @@ const nodemailer = require('nodemailer'); //used for reset password email sendin
 const async = require('async'); //used to avoid nested callbacks
 const crypto = require('crypto'); //used to generate random token during password reset
 const { ensureAuthenticated } = require('../config/auth'); //make sure users are logged in to view page 
-
+const fetch = require("node-fetch");
 //Google Email/Pass
 const googlePass = require('../config/keys').googlePassword;
 
 //User model
 const User = require('../models/User');
+
+//check to see if logged in
+const authCheck = (req, res, next) => {
+    console.log("auth check: " + req.user);
+    //console.log(expressSess.session);
+    if(!req.user) { //if user isnt logged in
+        res.redirect('/users/login');
+    } else { //if user is logged in
+        next();
+    }
+}
 
 //Login Page
 router.get('/login', (req, res) => res.render('Login'));
@@ -37,6 +49,7 @@ router.get('/auth/facebook', passport.authenticate('facebook'));
 router.get('/auth/facebook/callback',
     passport.authenticate('facebook', { failureRedirect: '/users/login' }),
     function(req, res) {
+        //console.log("facebook user: " + req.user);
         //successful authentication, redirect
         res.redirect('/users/dashboard');
     }
