@@ -9,6 +9,14 @@ const keys = require('./config/keys');
 
 const app = express(); //initialize app variable with express
 
+//DB config
+const db = require('./config/keys').MongoURI;
+
+//connect to mongodb
+mongoose.connect(db, { useNewUrlParser: true })
+    .then(() => console.log('MongoDB Connected Successfully...'))
+    .catch(err => console.log(err))
+
 //Passport config
 require('./config/passport')(passport);
 
@@ -17,14 +25,6 @@ app.use(cookieSession({
     maxAge: 24 * 60 * 60 * 1000,
     keys: [keys.session.cookieKey]
 }));
-
-//DB config
-const db = require('./config/keys').MongoURI;
-
-//connect to mongodb
-mongoose.connect(db, { useNewUrlParser: true })
-    .then(() => console.log('MongoDB Connected Successfully...'))
-    .catch(err => console.log(err))
 
 //EJS
 app.use(expressLayouts);

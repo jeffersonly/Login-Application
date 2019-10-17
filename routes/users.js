@@ -26,12 +26,34 @@ router.get('/auth/google/callback',
     passport.authenticate('google'), (req, res) => {
         //req.user - access the logged in user
         //res.send(req.user);
-        req.session.save(() => {
-            res.redirect('/users/reset');
-        })
-        
+        res.redirect('/users/dashboard');
     }
 );
+
+//auth with facebook
+router.get('/auth/facebook', passport.authenticate('facebook'));
+
+//auth with facebook callback
+router.get('/auth/facebook/callback',
+    passport.authenticate('facebook', { failureRedirect: '/users/login' }),
+    function(req, res) {
+        //successful authentication, redirect
+        res.redirect('/users/dashboard');
+    }
+);
+
+//Renders dashboard page view
+router.get('/dashboard', (req, res) => {
+    if(req.isAuthenticated) {
+        res.render('dashboard', {
+            //name: req.user.name
+        });
+    } else {
+        req.logout();
+        req.flash('error_msg', 'Please log in to view this page.');
+        res.redirect('/users/login');
+    }
+});
 
 //Register Page
 router.get('/register', (req, res) => res.render('Register'));

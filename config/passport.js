@@ -2,6 +2,7 @@ const LocalStrategy = require('passport-local').Strategy; //bringing in local st
 const mongoose = require('mongoose'); //bring in mongoose to see if email matches, password, etc
 const bcrypt = require('bcryptjs'); //bring in bcrypt to dehash and check if passwords match
 const GoogleStrategy = require('passport-google-oauth20').Strategy; //bringing in google strategy
+const FacebookStrategy = require('passport-facebook').Strategy;
 const keys = require('./keys'); // get keys
 
 //Load user model
@@ -9,6 +10,16 @@ const User = require('../models/User');
 const oAuthUser = require('../models/oAuthUser');
 
 module.exports = function(passport) {
+    passport.serializeUser((user, done) => {
+        done(null, user.id);
+    });
+
+    passport.deserializeUser((id, done) => {
+        User.findById (id, (err, user) => {
+            done(err, user);
+        });
+    });
+
     //uses local strategy
     passport.use(
         new LocalStrategy({ usernameField: 'email'}, (email, password, done) => {
@@ -46,27 +57,42 @@ module.exports = function(passport) {
                 if(currentUser) {
                     //we alrdy have a record w/ given profile id
                     done(null, currentUser); //tells passport we're done
+                    //console.log({profile});
                 } else {
                     new oAuthUser({
                         googleId: profile.id, 
                         email: profile.emails[0].value, 
-                        name: profile.givenName + ' ' + profile.familyName 
-                    }).save().then((newUser) => {
-                        console.log('new user created:' + newUser);
+                        name: profile.displayName
+                    }).save().then((user) => {
+                        //console.log({ user });
+                        done(null, user); //callback to let passport know we done
                     });
                 }
             })
         }
     ));
-    
 
-    passport.serializeUser((user, done) => {
-        done(null, user.id);
-    });
-
-    passport.deserializeUser((id, done) => {
-        User.findById (id, (err, user) => {
-            done(err, user);
-        });
-    });
+    passport.use(new FacebookStrategy({
+        clientID: keys.facebook.clientID,
+        clientSecret: keys.facebook.clientSecret,
+        callbackURL: 'http://localhost:5000/users/auth/facebook/callback'
+    },
+    function(accessToken, refreshToken, profile, done) {
+        oAuthUser.findOne({ facebookId: profile.id }).then((currentUser) => {
+            if(currentUser) {
+                //we alrdy have a record w/ given profile id
+                done(null, currentUser); //tells passport we're done
+                //console.log({profile});
+            } else {
+                new oAuthUser({
+                    email: profile.email, 
+                    facebookId: profile.id,
+                    name: profile.displayName
+                }).save().then((user) => {
+                    //console.log({ user });
+                    done(null, user); //callback to let passport know we done
+                });
+            }
+        })
+    }));
 }

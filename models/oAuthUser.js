@@ -7,7 +7,7 @@ const oAuthUserSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true
+        required: false
     },
     date: {
         type: Date,
@@ -17,6 +17,10 @@ const oAuthUserSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    facebookId: {
+        type: String,
+        required: false
+    }
 });
 
 const oAuthUser = mongoose.model('oAuthUser', oAuthUserSchema); //model for oauth users
