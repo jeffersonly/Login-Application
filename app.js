@@ -4,11 +4,19 @@ const mongoose = require('mongoose'); //bring in mongoose
 const flash = require('connect-flash'); //will be used for flash messaging
 const session = require('express-session'); //keeps a session of the express serv
 const passport = require('passport'); //used for authentication
+const cookieSession = require('cookie-session'); //used for oauth authentication cookie storing
+const keys = require('./config/keys');
 
 const app = express(); //initialize app variable with express
 
 //Passport config
 require('./config/passport')(passport);
+
+//use cookie session - encrypts cookie
+app.use(cookieSession({
+    maxAge: 24 * 60 * 60 * 1000,
+    keys: [keys.session.cookieKey]
+}));
 
 //DB config
 const db = require('./config/keys').MongoURI;

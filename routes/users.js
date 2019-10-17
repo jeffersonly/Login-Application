@@ -16,6 +16,23 @@ const User = require('../models/User');
 //Login Page
 router.get('/login', (req, res) => res.render('Login'));
 
+//auth with google
+router.get('/auth/google', passport.authenticate('google', {
+    scope: ['profile', 'email'] //stuff you want from google, we want profile info
+}));
+
+//auth with google callback
+router.get('/auth/google/callback', 
+    passport.authenticate('google'), (req, res) => {
+        //req.user - access the logged in user
+        //res.send(req.user);
+        req.session.save(() => {
+            res.redirect('/users/reset');
+        })
+        
+    }
+);
+
 //Register Page
 router.get('/register', (req, res) => res.render('Register'));
 
@@ -186,6 +203,7 @@ router.post('/forgot', (req, res, next) => {
 
     //Reset Password Handler
     router.post('/reset', ensureAuthenticated, (req, res) => {
+    
     //console.log(req.user.name + "\n" + req.user.email);
     const { password1, password2 } = req.body; //pull stuff out of req.body
 
